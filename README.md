@@ -1,2 +1,2 @@
 # Face Recognition Brain
-A face recoginition app in React
+A face recognition app in React
