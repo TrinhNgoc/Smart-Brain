@@ -1,2 +1,2 @@
-# Face Recognition Brain
+# Smart Brain
 A face recognition app in React
