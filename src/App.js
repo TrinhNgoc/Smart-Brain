@@ -62,6 +62,39 @@ class App extends Component {
     this.state = initialState;
   }
 
+  componentDidMount() {
+    const token = window.sessionStorage.getItem("token");
+    if (token) {
+      fetch("http://192.168.99.100:3001/signin", {
+        method: "post",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token
+        }
+      })
+        .then(resp => resp.json())
+        .then(data => {
+          if (data && data.id) {
+            fetch(`http://192.168.99.100:3001/profile/${data.id}`, {
+              method: "get",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: token
+              }
+            })
+              .then(resp => resp.json())
+              .then(user => {
+                if (user && user.email) {
+                  this.loadUser(user);
+                  this.onRouteChange("home");
+                }
+              });
+          }
+        })
+        .catch(console.log);
+    }
+  }
+
   loadUser = data => {
     this.setState({
       user: {
@@ -75,22 +108,27 @@ class App extends Component {
   };
 
   calculateFaceLocations = data => {
-    return data.outputs[0].data.regions.map(face => {
-      const clarifaiFace = face.region_info.bounding_box;
-      const image = document.getElementById("inputImage");
-      const width = Number(image.width);
-      const height = Number(image.height);
-      return {
-        leftCol: clarifaiFace.left_col * width,
-        topRow: clarifaiFace.top_row * height,
-        rightCol: width - clarifaiFace.right_col * width,
-        bottomRow: height - clarifaiFace.bottom_row * height
-      };
-    });
+    if (data && data.outputs) {
+      return data.outputs[0].data.regions.map(face => {
+        const clarifaiFace = face.region_info.bounding_box;
+        const image = document.getElementById("inputImage");
+        const width = Number(image.width);
+        const height = Number(image.height);
+        return {
+          leftCol: clarifaiFace.left_col * width,
+          topRow: clarifaiFace.top_row * height,
+          rightCol: width - clarifaiFace.right_col * width,
+          bottomRow: height - clarifaiFace.bottom_row * height
+        };
+      });
+    }
+    return;
   };
 
   displayFaceBoxes = boxes => {
-    this.setState({ boxes: boxes });
+    if (boxes) {
+      this.setState({ boxes: boxes });
+    }
   };
 
   onInputChange = event => {
@@ -101,7 +139,10 @@ class App extends Component {
     this.setState({ imageUrl: this.state.input });
     fetch("http://192.168.99.100:3001/imageurl", {
       method: "post",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: window.sessionStorage.getItem("token")
+      },
       body: JSON.stringify({
         input: this.state.input
       })
@@ -111,7 +152,10 @@ class App extends Component {
         if (response) {
           fetch("http://192.168.99.100:3001/image", {
             method: "put",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: window.sessionStorage.getItem("token")
+            },
             body: JSON.stringify({
               id: this.state.user.id
             })
